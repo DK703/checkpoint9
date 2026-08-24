@@ -49,6 +49,18 @@ public:
     10,
     std::bind(&ApproachNode::odom_callback, this, std::placeholders::_1));
 
+
+    client_ = this->create_client<custom_interfaces::srv::GoToLoading>("/approach_shelf");
+
+    while (!client_->wait_for_service(std::chrono::seconds(1))) {
+            if (!rclcpp::ok()) {
+                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
+                return;
+            }
+            RCLCPP_INFO(this->get_logger(), "Service not available, waiting again...");
+    }
+
+
     //State state_ = State::DRIVING;
 
 
@@ -65,6 +77,36 @@ private:
 
     State state_ = State::DRIVING;
 
+
+    void send_request()
+    {
+    
+    
+    auto request = std::make_shared<custom_interfaces::srv::GoToLoading::Request>();
+    request->attach_to_shelf = final_approach_value;
+
+    RCLCPP_INFO(this->get_logger(), "sending request");
+
+
+    client_->async_send_request(
+            request,
+            std::bind(&ApproachNode::response_callback, this, std::placeholders::_1));
+
+    
+    }
+
+    void response_callback(rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedFuture future)
+    {
+        RCLCPP_INFO(this->get_logger(), "response callback");
+
+        auto response = future.get();
+
+        RCLCPP_INFO(this->get_logger(), "Read parameter final_approach = %s", final_approach_value ? "true" : "false");
+
+    
+    }
+
+
     void timer_callback()
     {
 
@@ -75,7 +117,7 @@ private:
                 twist_.linear.x = linearx_;
                 twist_.angular.z = angularspeed_;
                 cmd_publisher_->publish(twist_);
-                RCLCPP_INFO(this->get_logger(), "publisher runs with linearx_ = %f", linearx_);
+                //RCLCPP_INFO(this->get_logger(), "publisher runs with linearx_ = %f", linearx_);
                 break;
             }
         case State::ROTATING:
@@ -88,7 +130,7 @@ private:
                 else {
                     twist_.angular.z = -0.3;
                 }
-                RCLCPP_INFO(this->get_logger(), "rotating");
+                //RCLCPP_INFO(this->get_logger(), "rotating");
 
 
                 cmd_publisher_->publish(twist_);
@@ -118,8 +160,8 @@ private:
             twist_.angular.z = angularspeed_;
             cmd_publisher_->publish(twist_);
             RCLCPP_INFO(this->get_logger(), "in state DONE");
-
-            rclcpp::shutdown(); //needed so robot shut down cleanly!
+            send_request();
+            //rclcpp::shutdown(); //needed so robot shut down cleanly!
             break;
         }
     }
@@ -214,7 +256,7 @@ private:
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_subscriber_;
 
     rclcpp::Service<custom_interfaces::srv::GoToLoading>::SharedPtr service_;
-    rclcpp::Service<custom_interfaces::srv::GoToLoading>::SharedPtr client_;
+    rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedPtr client_;
     double obstacle_value;
     int degree_value;
     float linearx_;

@@ -11,6 +11,8 @@
 #include "tf2_ros/buffer.h"
 #include "tf2/exceptions.h"
 #include "tf2_ros/transform_broadcaster.h"
+#include <geometry_msgs/msg/point_stamped.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 using namespace std::chrono_literals;
 
@@ -55,17 +57,11 @@ public:
           // Listener writes incoming /tf data into the buffer
           tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
           response_ = false;
+        
+        cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
 
-            client_ = this->create_client<custom_interfaces::srv::GoToLoading>("/approach_shelf");
 
-        while (!client_->wait_for_service(std::chrono::seconds(1))) {
-            if (!rclcpp::ok()) {
-                RCLCPP_ERROR(this->get_logger(), "Interrupted while waiting for the service. Exiting.");
-                return;
-            }
-            RCLCPP_INFO(this->get_logger(), "Service not available, waiting again...");
-        }
       
 
 
@@ -78,6 +74,47 @@ private:
     //publish the cart_frame_/frameConnection_ no matter what. 
 
      RCLCPP_INFO(this->get_logger(), "service has recieved a request and a response");
+     //do i need twolegs?
+
+     if(request->attach_to_shelf == true)
+     {
+            rclcpp::Rate rate(10);  // 10 Hz control loop
+        while (rclcpp::ok()) {
+                geometry_msgs::msg::TransformStamped t;
+                try {
+                    t = tf_buffer_->lookupTransform("robot_base_footprint", "cart_frame", tf2::TimePointZero);
+                } 
+                catch (const tf2::TransformException& ex) {
+                    RCLCPP_WARN(this->get_logger(), "TF lookup failed: %s", ex.what());
+                    rate.sleep();
+                    continue;
+                }
+
+                double error_x = t.transform.translation.x;
+                double error_y = t.transform.translation.y;
+                double distance = std::sqrt(error_x * error_x + error_y * error_y);
+
+                RCLCPP_INFO(this->get_logger(), "error is %f", distance);
+
+                if (distance < 0.05) {  // close enough threshold
+                    break;
+                }
+
+                geometry_msgs::msg::Twist cmd;
+                cmd.linear.x = std::min(0.15, distance * 0.5);   // simple proportional control, capped
+                cmd.angular.z = std::atan2(error_y, error_x) * 1.0;  // steer toward the target
+                cmd_vel_publisher_->publish(cmd);
+
+                rate.sleep();
+            }
+//while loop finished already
+
+                geometry_msgs::msg::Twist stop;
+                cmd_vel_publisher_->publish(stop);
+                
+                //a second geometry_msgs::msg::Twist command to move the robot 30 feet!
+
+     }
      response->complete = response_;
     
     }
@@ -87,17 +124,17 @@ private:
     
         //set the frameConnection parameters that dont rely on the leg # at the start
         frameConnection_.header.stamp = this->get_clock()->now();
-        frameConnection_.header.frame_id = scan_msg->header.frame_id;
+        frameConnection_.header.frame_id = "odom";
         frameConnection_.child_frame_id = "cart_frame";
-        RCLCPP_INFO(this->get_logger(), "scan runs");
+        //RCLCPP_INFO(this->get_logger(), "scan runs");
         std::vector<geometry_msgs::msg::Point> v = detect_legs(scan_msg);
 
-        RCLCPP_INFO(this->get_logger(), "Detected %zu legs:", v.size());
+       // RCLCPP_INFO(this->get_logger(), "Detected %zu legs:", v.size());
         int idx = 0;
         //printout statement
         for (const auto& p : v) {
-            RCLCPP_INFO(this->get_logger(), "  Leg %d: x=%f, y=%f, z=%f", idx++, p.x, p.y, p.z);
-            RCLCPP_INFO(this->get_logger(), "p is %f", p);
+           // RCLCPP_INFO(this->get_logger(), "  Leg %d: x=%f, y=%f, z=%f", idx++, p.x, p.y, p.z);
+            //RCLCPP_INFO(this->get_logger(), "p is %f", p);
 
   
 
@@ -129,22 +166,43 @@ private:
                 
             
             }
-            RCLCPP_INFO(this->get_logger(), "  x1 %f: y1 %f, x2 %f, y2 %f", firstx, firsty, secondx, secondy);
+            //RCLCPP_INFO(this->get_logger(), "  x1 %f: y1 %f, x2 %f, y2 %f", firstx, firsty, secondx, secondy);
             float midx = ((firstx+secondx)/2);
             float midy = ((firsty+secondy)/2);
-            frameConnection_.transform.translation.x = midx;
-            frameConnection_.transform.translation.y = midy;
-            frameConnection_.transform.rotation.x = 0;
-            frameConnection_.transform.rotation.y = 0;
-            frameConnection_.transform.rotation.z = 0;
-            frameConnection_.transform.rotation.w = 1;
-            tf_broadcaster_->sendTransform(frameConnection_);
+
+            //point built in laser frame
+            geometry_msgs::msg::PointStamped laser_point;
+            laser_point.header.stamp = scan_msg->header.stamp;
+            laser_point.header.frame_id = scan_msg->header.frame_id;
+            laser_point.point.x = midx;
+            laser_point.point.y = midy;
+            laser_point.point.z = 0.0;
+
+            try
+            {
+                    geometry_msgs::msg::PointStamped odom_point =
+                    tf_buffer_->transform(laser_point, "odom", tf2::durationFromSec(0.1));
+                    //tf convert point to odom frame.
+                    frameConnection_.transform.translation.x = odom_point.point.x;
+                    frameConnection_.transform.translation.y = odom_point.point.y;
+                    frameConnection_.transform.translation.z = 0.0;
+                    frameConnection_.transform.rotation.x = 0;
+                    frameConnection_.transform.rotation.y = 0;
+                    frameConnection_.transform.rotation.z = 0;
+                    frameConnection_.transform.rotation.w = 1;
+
+                    tf_broadcaster_->sendTransform(frameConnection_);
+            }
+            catch(const tf2::TransformException& ex)
+            {
+                    RCLCPP_WARN(this->get_logger(), "Could not transform leg midpoint to odom");
+            }
+ 
             
 
-            RCLCPP_INFO(this->get_logger(), "midx %f midy %f", midx, midy);
+            //RCLCPP_INFO(this->get_logger(), "midx %f midy %f", midx, midy);
 
-            //need to change this to be true only when final approach is succesful, not when 2 legs detected
-            response_ = true;
+        
 
         
         }
@@ -210,8 +268,10 @@ private:
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
     geometry_msgs::msg::TransformStamped frameConnection_;
+    bool twolegs_;
     bool response_;
-    rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedPtr client_;
+    //rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedPtr client_;
+    rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_publisher_;
     
 
 
