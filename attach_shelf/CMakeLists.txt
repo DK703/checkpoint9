@@ -12,7 +12,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
-
+find_package(rosidl_default_generators REQUIRED)
+find_package(custom_interfaces REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -29,6 +32,17 @@ add_executable(pre_approach src/pre_approach.cpp)
 ament_target_dependencies(pre_approach rclcpp ament_cmake geometry_msgs sensor_msgs nav_msgs tf2)
 install(TARGETS pre_approach DESTINATION lib/${PROJECT_NAME})
 
+add_executable(pre_approach_v2 src/pre_approach_v2.cpp)
+ament_target_dependencies(pre_approach_v2 rclcpp ament_cmake geometry_msgs sensor_msgs nav_msgs tf2 custom_interfaces)
+install(TARGETS pre_approach_v2 DESTINATION lib/${PROJECT_NAME})
+
+
+
+add_executable(approach_service_server src/approach_service_server.cpp)
+ament_target_dependencies(approach_service_server rclcpp ament_cmake geometry_msgs sensor_msgs nav_msgs tf2 custom_interfaces tf2_ros tf2_geometry_msgs)
+install(TARGETS approach_service_server DESTINATION lib/${PROJECT_NAME})
+
 install(DIRECTORY launch rviz DESTINATION share/${PROJECT_NAME})
+
 
 ament_package()
