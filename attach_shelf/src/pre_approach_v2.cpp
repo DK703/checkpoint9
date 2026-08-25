@@ -1,4 +1,5 @@
 #include "geometry_msgs/msg/twist.hpp"
+#include "rclcpp/executors.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <algorithm>
 #include <chrono>
@@ -7,6 +8,7 @@
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include "custom_interfaces/srv/go_to_loading.hpp"
+
 using namespace std::chrono_literals;
 class ApproachNode : public rclcpp::Node
 {
@@ -61,7 +63,7 @@ public:
     }
 
 
-    //State state_ = State::DRIVING;
+    
 
 
 
@@ -81,16 +83,26 @@ private:
     void send_request()
     {
     
-    
+    justOneRequest = false;
     auto request = std::make_shared<custom_interfaces::srv::GoToLoading::Request>();
     request->attach_to_shelf = final_approach_value;
 
     RCLCPP_INFO(this->get_logger(), "sending request");
 
 
-    client_->async_send_request(
+    auto result = client_->async_send_request(
             request,
             std::bind(&ApproachNode::response_callback, this, std::placeholders::_1));
+    /*
+    if(rclcpp::spin_until_future_complete(this->get_node_base_interface(), result) !=  rclcpp::FutureReturnCode::SUCCESS)
+    {
+    RCLCPP_ERROR(this->get_logger(), "Failed");
+    }
+    else
+    {
+    RCLCPP_INFO(this->get_logger(), "service syccess");
+    }
+*/
 
     
     }
@@ -101,8 +113,10 @@ private:
 
         auto response = future.get();
 
-        RCLCPP_INFO(this->get_logger(), "Read parameter final_approach = %s", final_approach_value ? "true" : "false");
-
+        //RCLCPP_INFO(this->get_logger(), "Read parameter final_approach = %s", final_approach_value ? "true" : "false");
+        RCLCPP_INFO(this->get_logger(), "value of response->complete is %s", response->complete ? "true" : "false");
+        //rclcpp::shutdown();
+        //response_complete = response->complete;
     
     }
 
@@ -154,13 +168,16 @@ private:
             }
         case State::DONE:
         {
+            
             linearx_ = 0.0;
             angularspeed_ = 0.0;
             twist_.linear.x = linearx_;
             twist_.angular.z = angularspeed_;
             cmd_publisher_->publish(twist_);
             RCLCPP_INFO(this->get_logger(), "in state DONE");
+            if(justOneRequest){
             send_request();
+            }
             //rclcpp::shutdown(); //needed so robot shut down cleanly!
             break;
         }
@@ -264,6 +281,8 @@ private:
     double current_yaw_ = 0.0;
     double start_yaw_ = 0.0;
     bool final_approach_value = false;
+    bool justOneRequest = true;
+    
 
     
     

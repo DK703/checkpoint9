@@ -14,6 +14,7 @@
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include <iostream>
 using namespace std::chrono_literals;
 
 //from geometry_msgs.msg import TransformStamped
@@ -96,10 +97,11 @@ private:
 
                 RCLCPP_INFO(this->get_logger(), "error is %f", distance);
 
-                if (distance < 0.05) {  // close enough threshold
+                if (distance < 0.5) {  // close enough threshold
                     break;
                 }
 
+                RCLCPP_INFO(this->get_logger(), "still in while");
                 geometry_msgs::msg::Twist cmd;
                 cmd.linear.x = std::min(0.15, distance * 0.5);   // simple proportional control, capped
                 cmd.angular.z = std::atan2(error_y, error_x) * 1.0;  // steer toward the target
@@ -113,9 +115,21 @@ private:
                 cmd_vel_publisher_->publish(stop);
                 
                 //a second geometry_msgs::msg::Twist command to move the robot 30 feet!
+                //RCLCPP_INFO(this->get_logger(), "30 feet mode");
+
+                //geometry_msgs::msg::Twist cmd2;
+                //cmd2.linear.x = 0.1;
+                //cmd_vel_publisher_->publish(cmd2);
+                //sleep(3);
+                //std::chrono::seconds s(3);
+                //cmd_vel_publisher_->publish(stop);
+                //RCLCPP_INFO(this->get_logger(), "stop");
+                response->complete = response_;
+                //rclcpp::shutdown();
+
 
      }
-     response->complete = response_;
+     //response->complete = true;
     
     }
 
