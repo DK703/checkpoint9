@@ -13,8 +13,8 @@
 #include "tf2_ros/transform_broadcaster.h"
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-
 #include <iostream>
+#include <thread>
 using namespace std::chrono_literals;
 
 //from geometry_msgs.msg import TransformStamped
@@ -115,17 +115,40 @@ private:
                 cmd_vel_publisher_->publish(stop);
                 
                 //a second geometry_msgs::msg::Twist command to move the robot 30 feet!
-                //RCLCPP_INFO(this->get_logger(), "30 feet mode");
+                RCLCPP_INFO(this->get_logger(), "30 feet mode");
 
-                //geometry_msgs::msg::Twist cmd2;
-                //cmd2.linear.x = 0.1;
+                geometry_msgs::msg::Twist cmd2;
+                cmd2.linear.x = 0.43;
                 //cmd_vel_publisher_->publish(cmd2);
                 //sleep(3);
+                RCLCPP_INFO(this->get_logger(), "begin wait");
+                
+                
                 //std::chrono::seconds s(3);
                 //cmd_vel_publisher_->publish(stop);
                 //RCLCPP_INFO(this->get_logger(), "stop");
-                response->complete = response_;
+               
                 //rclcpp::shutdown();
+                std::chrono::time_point<std::chrono::_V2::steady_clock> start;
+
+                start = std::chrono::_V2::steady_clock::now();
+                std::chrono::time_point<std::chrono::_V2::steady_clock> end = std::chrono::_V2::steady_clock::now();
+                
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+                
+                while (elapsed.count() < 3)
+                {
+                
+                RCLCPP_INFO(this->get_logger(), "time is %d", elapsed.count());
+                end = std::chrono::_V2::steady_clock::now();
+                elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+                cmd_vel_publisher_->publish(cmd2);
+                }
+                //cmd_vel_publisher_->publish(stop);
+
+
+
+                response->complete = response_;
 
 
      }

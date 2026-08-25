@@ -174,7 +174,7 @@ private:
             twist_.linear.x = linearx_;
             twist_.angular.z = angularspeed_;
             cmd_publisher_->publish(twist_);
-            RCLCPP_INFO(this->get_logger(), "in state DONE");
+            //RCLCPP_INFO(this->get_logger(), "in state DONE");
             if(justOneRequest){
             send_request();
             }
