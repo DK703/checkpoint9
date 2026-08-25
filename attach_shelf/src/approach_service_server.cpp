@@ -27,11 +27,12 @@ using namespace std::chrono_literals;
 //if attach_to_shelf is false, final approach will not happen. that being said, cart_frame will still be published!
 class ApproachService : public rclcpp:: Node
 {
-//one leg-2-4 8000 values?
+
 public:
     ApproachService(const std::string& node_name) : Node(node_name)
     {
     
+        //two separate callback groups that dont interfere with each other
         scan_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         service_cb_group_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
       
@@ -41,7 +42,7 @@ public:
 
 
         std::string name_service = "/approach_shelf";
-
+        //receives request from pre_approach_v2
         service_ = this->create_service<custom_interfaces::srv::GoToLoading>(
         name_service,std::bind(&ApproachService::get_approach_callback, this, std::placeholders::_1, std::placeholders::_2),
         rmw_qos_profile_services_default,
@@ -49,9 +50,11 @@ public:
         );
 
 
+        //use this subscriber to help figure out odom point
         laser_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
         "/scan", 10, std::bind(&ApproachService::scan_callback, this, std::placeholders::_1),
         scan_options);
+          
 
           tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
 
@@ -75,11 +78,11 @@ public:
 private:
     void get_approach_callback(std::shared_ptr<custom_interfaces::srv::GoToLoading::Request> request, std::shared_ptr<custom_interfaces::srv::GoToLoading::Response> response)
     {
-    //publish the cart_frame_/frameConnection_ no matter what. 
+   
 
      RCLCPP_INFO(this->get_logger(), "service has recieved a request and a response");
-     //do i need twolegs?
-
+    
+     //how it knows to get the request
      if(request->attach_to_shelf == true)
      {
             rclcpp::Rate rate(10);  // 10 Hz control loop
@@ -127,18 +130,14 @@ private:
                 RCLCPP_INFO(this->get_logger(), "begin wait");
                 
                 
-                //std::chrono::seconds s(3);
-                //cmd_vel_publisher_->publish(stop);
-                //RCLCPP_INFO(this->get_logger(), "stop");
-               
-                //rclcpp::shutdown();
+      
                 std::chrono::time_point<std::chrono::_V2::steady_clock> start;
 
                 start = std::chrono::_V2::steady_clock::now();
                 std::chrono::time_point<std::chrono::_V2::steady_clock> end = std::chrono::_V2::steady_clock::now();
                 
                 auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-                
+                //twist messages need to be in a loop for the commands to run.
                 while (elapsed.count() < 3)
                 {
                 
@@ -160,10 +159,10 @@ private:
 
 
 
-
+                //does not need a loop
                 elevator_up_publisher_->publish(el_up);
 
-                
+                //for safety
                 while(elapsed2.count() < 2)
                 {
                     RCLCPP_INFO(this->get_logger(), "time is %d", elapsed2.count());
@@ -181,6 +180,7 @@ private:
      }
      //response->complete = true;
        response->complete = response_;
+       rclcpp::shutdown();
     }
 
     void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
@@ -193,12 +193,11 @@ private:
         //RCLCPP_INFO(this->get_logger(), "scan runs");
         std::vector<geometry_msgs::msg::Point> v = detect_legs(scan_msg);
 
-       // RCLCPP_INFO(this->get_logger(), "Detected %zu legs:", v.size());
+
         int idx = 0;
         //printout statement
         for (const auto& p : v) {
-           // RCLCPP_INFO(this->get_logger(), "  Leg %d: x=%f, y=%f, z=%f", idx++, p.x, p.y, p.z);
-            //RCLCPP_INFO(this->get_logger(), "p is %f", p);
+ 
 
   
 

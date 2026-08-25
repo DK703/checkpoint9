@@ -62,6 +62,9 @@ public:
             RCLCPP_INFO(this->get_logger(), "Service not available, waiting again...");
     }
 
+    current_yaw_ = 0.0;
+    start_yaw_ = 0.0;
+    callbackDone_ = false;
 
     
 
@@ -83,7 +86,7 @@ private:
     void send_request()
     {
     
-    justOneRequest = false;
+    justOneRequest_ = false;
     auto request = std::make_shared<custom_interfaces::srv::GoToLoading::Request>();
     request->attach_to_shelf = final_approach_value;
 
@@ -117,6 +120,7 @@ private:
         RCLCPP_INFO(this->get_logger(), "value of response->complete is %s", response->complete ? "true" : "false");
         //rclcpp::shutdown();
         //response_complete = response->complete;
+        callbackDone_ = true;
         
     
     }
@@ -157,11 +161,7 @@ private:
 
                 if (rotated >= target)
                     {
-                        RCLCPP_INFO(this->get_logger(),
-        "Stopping rotation: rotated=%.4f rad (%.2f deg), target=%.4f rad (%.2f deg), overshoot=%.2f deg",
-        rotated, rotated * 180.0 / M_PI,
-        target, target * 180.0 / M_PI,
-        (rotated - target) * 180.0 / M_PI);
+
                         state_ = State::DONE;
                     }
                 break;
@@ -175,27 +175,27 @@ private:
             twist_.linear.x = linearx_;
             twist_.angular.z = angularspeed_;
             cmd_publisher_->publish(twist_);
-            //RCLCPP_INFO(this->get_logger(), "in state DONE");
-            if(justOneRequest){
+           
+            if(justOneRequest_){
             send_request();
-            //rclcpp::shutdown();
+            
             }
-            //rclcpp::shutdown(); //needed so robot shut down cleanly!
+           
+            if(callbackDone_ == true)
+            {
+                rclcpp::shutdown();
+            }
             break;
         }
     }
     }
     void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan)
-    {  //300
-        //double howmany = 0.0;
+    {  
+        
         std::vector<float>::iterator it;
-        //float min_index = 150;
+        
         float min_distance = 999999.0;
-        //for (it = scan->ranges.begin(); it != scan->ranges.end(); ++it) {
-  
-        //howmany++;
-        //}
-       // RCLCPP_INFO(this->get_logger(), "how many=%f",howmany);
+
 
        //assumption on calculating the front
        for(int i = 125; i < 176; i++)
@@ -207,8 +207,7 @@ private:
             }
 
         
-        //RCLCPP_INFO(this->get_logger(), "min index = %f min dinstance = %f" , min_index, min_distance);
-        //RCLCPP_INFO(this->get_logger(), "obstacle_value = %f", obstacle_value);
+      
         if(min_distance < obstacle_value )
         {
         
@@ -280,10 +279,11 @@ private:
     int degree_value;
     float linearx_;
     float angularspeed_;
-    double current_yaw_ = 0.0;
-    double start_yaw_ = 0.0;
+    double current_yaw_;
+    double start_yaw_;
     bool final_approach_value = false;
-    bool justOneRequest = true;
+    bool justOneRequest_ = true;
+    bool callbackDone_;
     
 
     
