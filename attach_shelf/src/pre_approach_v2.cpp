@@ -117,6 +117,7 @@ private:
         RCLCPP_INFO(this->get_logger(), "value of response->complete is %s", response->complete ? "true" : "false");
         //rclcpp::shutdown();
         //response_complete = response->complete;
+        
     
     }
 
@@ -177,6 +178,7 @@ private:
             //RCLCPP_INFO(this->get_logger(), "in state DONE");
             if(justOneRequest){
             send_request();
+            //rclcpp::shutdown();
             }
             //rclcpp::shutdown(); //needed so robot shut down cleanly!
             break;

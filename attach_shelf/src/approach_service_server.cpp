@@ -15,6 +15,8 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <iostream>
 #include <thread>
+#include "std_msgs/msg/string.hpp"
+
 using namespace std::chrono_literals;
 
 //from geometry_msgs.msg import TransformStamped
@@ -60,6 +62,7 @@ public:
           response_ = false;
         
         cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
+        elevator_up_publisher_ = this->create_publisher<std_msgs::msg::String>("/elevator_up", 10);
 
 
 
@@ -139,21 +142,45 @@ private:
                 while (elapsed.count() < 3)
                 {
                 
-                RCLCPP_INFO(this->get_logger(), "time is %d", elapsed.count());
+                //RCLCPP_INFO(this->get_logger(), "time is %d", elapsed.count());
                 end = std::chrono::_V2::steady_clock::now();
                 elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
                 cmd_vel_publisher_->publish(cmd2);
                 }
-                //cmd_vel_publisher_->publish(stop);
+                
+                //ros2 topic pub /elevator_up std_msgs/msg/String --once
+                
+
+                std_msgs::msg::String el_up; 
+                el_up.data = "up";
+
+                std::chrono::time_point<std::chrono::_V2::steady_clock> start2 = std::chrono::_V2::steady_clock::now();
+                std::chrono::time_point<std::chrono::_V2::steady_clock> end2 = std::chrono::_V2::steady_clock::now();
+                auto elapsed2 = std::chrono::duration_cast<std::chrono::seconds>(end2 - start2);
 
 
 
-                response->complete = response_;
+
+                elevator_up_publisher_->publish(el_up);
+
+                
+                while(elapsed2.count() < 2)
+                {
+                    RCLCPP_INFO(this->get_logger(), "time is %d", elapsed2.count());
+                    end2 = std::chrono::_V2::steady_clock::now();
+                    elapsed2 = std::chrono::duration_cast<std::chrono::seconds>(end2 - start2);
+                    cmd_vel_publisher_->publish(stop);
+                }
+
+
+
+
+                response_ = true;
 
 
      }
      //response->complete = true;
-    
+       response->complete = response_;
     }
 
     void scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
@@ -309,6 +336,7 @@ private:
     bool response_;
     //rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedPtr client_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr elevator_up_publisher_;
     
 
 
