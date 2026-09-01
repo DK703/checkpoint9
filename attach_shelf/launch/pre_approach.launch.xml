@@ -2,7 +2,7 @@
     <arg name="obstacle" default="0.3"/>
     <arg name="degrees" default="-90.0"/>
 
-    <node pkg="attach_shelf" exec="pre_approach" name="pre_approach_node" output="screen">
+    <node pkg="attach_shelf" exec="pre_approach" name="pre_approach_node" output="screen" on_exit="shutdown">
         <param name="obstacle" value="$(var obstacle)"/>
         <param name="degrees" value="$(var degrees)"/>
     </node>

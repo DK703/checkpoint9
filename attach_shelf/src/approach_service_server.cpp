@@ -165,7 +165,7 @@ private:
                 //for safety
                 while(elapsed2.count() < 2)
                 {
-                    RCLCPP_INFO(this->get_logger(), "time is %d", elapsed2.count());
+                    //RCLCPP_INFO(this->get_logger(), "time is %d", elapsed2.count());
                     end2 = std::chrono::_V2::steady_clock::now();
                     elapsed2 = std::chrono::duration_cast<std::chrono::seconds>(end2 - start2);
                     cmd_vel_publisher_->publish(stop);

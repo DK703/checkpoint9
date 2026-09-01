@@ -183,6 +183,7 @@ private:
            
             if(callbackDone_ == true)
             {
+                RCLCPP_INFO(this->get_logger(), "calling rclcpp::shutdown()");
                 rclcpp::shutdown();
             }
             break;
