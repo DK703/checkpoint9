@@ -6,7 +6,7 @@
 #include "nav_msgs/msg/odometry.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2/LinearMath/Matrix3x3.h>
-#include "my_components/pre_approach_mc.h"
+#include "my_components/pre_approach_mc.hpp"
 
 using namespace std::chrono_literals;
 
@@ -14,11 +14,28 @@ namespace my_components
 {
 
 //how we create the nodes
+
+//this constructor has an initializer list. 
 PreApproach::PreApproach(const rclcpp::NodeOptions & options)
 : rclcpp::Node("pre_approach_node", options),
   obstacle_value_(this->declare_parameter<double>("obstacle", 1.2)),
   degree_value_(this->declare_parameter<int>("degrees", 30))
 {
+
+    //constructor function itself is PreApproach::PreApproach(const rclcpp::NodeOptions & options).
+    //For these type of functions the part rclcpp::Node("pre_approach_node", options) is needed cuz  PreApproach inherits from node
+
+    //To summarize, for these header functions, expect that I will consistently use this format, have the constructor function
+    //and always an initlaizer list that containts the base class needed for inheritence
+
+
+    //PreApproach::PreApproach(const rclcpp::NodeOptions & options) : rclcpp::Node("pre_approach_node", options){}
+
+
+    //initializer list parts, rclcpp::Node("pre_approach_node", options) is needed to explicitly call one of its constructors.
+    //construct base class with name pre_apporach_node
+    //obstacle_value_ and degree_value are the parameters
+
     cmd_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
     

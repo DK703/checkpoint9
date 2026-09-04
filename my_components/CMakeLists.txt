@@ -13,7 +13,10 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2 REQUIRED)
-
+find_package(custom_interfaces REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   # the following line skips the linter which checks for copyrights
@@ -28,7 +31,7 @@ endif()
 
 include_directories(include)
 
-add_library(moverobot_component SHARED src/pre_approach_mc.cpp)
+add_library(moverobot_component SHARED src/pre_approach_mc.cpp src/approach_service_client.cpp)
 target_compile_definitions(moverobot_component PRIVATE "COMPOSITION_BUILDING_DLL")
 ament_target_dependencies(moverobot_component
   "rclcpp"
@@ -36,15 +39,28 @@ ament_target_dependencies(moverobot_component
   "geometry_msgs"
   "sensor_msgs"
   "nav_msgs" 
-  "tf2")
+  "tf2"
+  "custom_interfaces"
+  "tf2_ros"
+  "tf2_geometry_msgs"
+  "std_msgs")
 rclcpp_components_register_nodes(moverobot_component "my_components::PreApproach")
+rclcpp_components_register_nodes(moverobot_component "my_components::ApproachClient")
 set(node_plugins "${node_plugins}my_components::MoveRobot;$<TARGET_FILE:moverobot_component>\n")
+
 
 install(TARGETS
   moverobot_component
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
+
+#add_executable(manual_composition
+ # src/manual_composition.cpp)
+  #add the other components other then manual in the future
+#target_link_libraries(manual_composition)
+#ament_target_dependencies(manual_composition
+ # "rclcpp")
 
 # Install launch files.
 install(DIRECTORY
