@@ -31,7 +31,7 @@ endif()
 
 include_directories(include)
 
-add_library(moverobot_component SHARED src/pre_approach_mc.cpp src/approach_service_client.cpp)
+add_library(moverobot_component SHARED src/pre_approach_mc.cpp src/approach_service_server_mc.cpp src/approach_service_client.cpp)
 target_compile_definitions(moverobot_component PRIVATE "COMPOSITION_BUILDING_DLL")
 ament_target_dependencies(moverobot_component
   "rclcpp"
@@ -45,8 +45,11 @@ ament_target_dependencies(moverobot_component
   "tf2_geometry_msgs"
   "std_msgs")
 rclcpp_components_register_nodes(moverobot_component "my_components::PreApproach")
-rclcpp_components_register_nodes(moverobot_component "my_components::ApproachClient")
-set(node_plugins "${node_plugins}my_components::MoveRobot;$<TARGET_FILE:moverobot_component>\n")
+rclcpp_components_register_nodes(moverobot_component "my_components::AttachClient")
+rclcpp_components_register_nodes(moverobot_component "my_components::AttachServer")
+
+#not needed for manual component loading, aka part 1? why?
+#set(node_plugins "${node_plugins}my_components::MoveRobot;$<TARGET_FILE:moverobot_component>\n")
 
 
 install(TARGETS

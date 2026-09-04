@@ -18,8 +18,8 @@ namespace my_components
 //this constructor has an initializer list. 
 PreApproach::PreApproach(const rclcpp::NodeOptions & options)
 : rclcpp::Node("pre_approach_node", options),
-  obstacle_value_(this->declare_parameter<double>("obstacle", 1.2)),
-  degree_value_(this->declare_parameter<int>("degrees", 30))
+  obstacle_value_(this->declare_parameter<double>("obstacle", 0.4)),
+  degree_value_(this->declare_parameter<int>("degrees", -90))
 {
 
     //constructor function itself is PreApproach::PreApproach(const rclcpp::NodeOptions & options).
@@ -97,6 +97,7 @@ void PreApproach::timer_callback()
         rotated, rotated * 180.0 / M_PI,
         target, target * 180.0 / M_PI,
         (rotated - target) * 180.0 / M_PI);
+                        RCLCPP_INFO(this->get_logger(), "moving to state done");
                         state_ = State::DONE;
                     }
                 break;
@@ -109,8 +110,8 @@ void PreApproach::timer_callback()
             twist_.linear.x = linearx_;
             twist_.angular.z = angularspeed_;
             cmd_publisher_->publish(twist_);
-            RCLCPP_INFO(this->get_logger(), "in state DONE");
-            rclcpp::shutdown(); //needed so robot shut down cleanly!
+            //RCLCPP_INFO(this->get_logger(), "in state DONE");
+            //rclcpp::shutdown(); //needed so robot shut down cleanly!
             break;
         }
     }

@@ -26,12 +26,12 @@ using namespace std::chrono_literals;
 namespace my_components
 {
 
-class ApproachService : public rclcpp::Node
+class AttachServer : public rclcpp::Node
 {
 
     public:
         
-        explicit ApproachService(const std::string& node_name);
+        explicit AttachServer(const rclcpp::NodeOptions & options);
     private:
     
         void get_approach_callback(std::shared_ptr<custom_interfaces::srv::GoToLoading::Request> request, std::shared_ptr<custom_interfaces::srv::GoToLoading::Response> response);

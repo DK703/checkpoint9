@@ -16,11 +16,11 @@
 namespace my_components
 {
 
-class ApproachClient : public rclcpp::Node
+class AttachClient : public rclcpp::Node
 {
     public:
         COMPOSITION_PUBLIC
-        explicit ApproachClient(const rclcpp::NodeOptions & options);
+        explicit AttachClient(const rclcpp::NodeOptions & options);
     private:
         void send_request();
         void response_callback(rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedFuture future);

@@ -16,24 +16,23 @@ namespace my_components
 {
 
 
-ApproachClient::ApproachClient(const rclcpp::NodeOptions & options)
-: rclcpp::Node("approach_client", options),
-  obstacle_value_(this->declare_parameter<double>("obstacle", 1.2)),
-  degree_value_(this->declare_parameter<int>("degrees", 30))
+AttachClient::AttachClient(const rclcpp::NodeOptions & options)
+: rclcpp::Node("approach_client", options)
 {
 
 
     //declare parameter
 
-    this->declare_parameter<double>("obstacle", 2);
+    //this->declare_parameter<double>("obstacle", 2);
     //this->declare_parameter("my_parameter", "world");
-    this->declare_parameter<int>("degrees", 35.0);
+    //this->declare_parameter<int>("degrees", 35.0);
     //this->declare_parameter<bool>("final_approach", false);
 
     //parameters at startup
-    obstacle_value = this->get_parameter("obstacle").as_double();
-    degree_value = this->get_parameter("degrees").as_int();
+    //obstacle_value = this->get_parameter("obstacle").as_double();
+    //degree_value = this->get_parameter("degrees").as_int();
     //final_approach_value = this->get_parameter("final_approach").as_bool();
+    final_approach_value = true;
 
 
 
@@ -41,21 +40,21 @@ ApproachClient::ApproachClient(const rclcpp::NodeOptions & options)
     cmd_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
 
     
-    timer_ = this->create_wall_timer(50ms, std::bind(&ApproachClient::timer_callback, this));
+    timer_ = this->create_wall_timer(50ms, std::bind(&AttachClient::timer_callback, this));
 
     auto qos = rclcpp::QoS(10).reliability(rclcpp::ReliabilityPolicy::Reliable);  
     /*
     scan_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
             "/scan", 
             qos,
-            std::bind(&ApproachClient::scan_callback, this, std::placeholders::_1));
+            std::bind(&AttachClient::scan_callback, this, std::placeholders::_1));
   */  
     linearx_ = 0.3;
 /*
     odom_subscriber_ = this->create_subscription<nav_msgs::msg::Odometry>(
     "/odom",
     10,
-    std::bind(&ApproachClient::odom_callback, this, std::placeholders::_1));
+    std::bind(&AttachClient::odom_callback, this, std::placeholders::_1));
 */
 
     client_ = this->create_client<custom_interfaces::srv::GoToLoading>("/approach_shelf");
@@ -80,7 +79,7 @@ ApproachClient::ApproachClient(const rclcpp::NodeOptions & options)
 }
 
 
-void ApproachClient::send_request()
+void AttachClient::send_request()
     {
     
     justOneRequest_ = false;
@@ -92,13 +91,13 @@ void ApproachClient::send_request()
 
     auto result = client_->async_send_request(
             request,
-            std::bind(&ApproachClient::response_callback, this, std::placeholders::_1));
+            std::bind(&AttachClient::response_callback, this, std::placeholders::_1));
 
 
     
     }
 
-void ApproachClient::response_callback(rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedFuture future)
+void AttachClient::response_callback(rclcpp::Client<custom_interfaces::srv::GoToLoading>::SharedFuture future)
     {
         RCLCPP_INFO(this->get_logger(), "response callback");
 
@@ -106,14 +105,14 @@ void ApproachClient::response_callback(rclcpp::Client<custom_interfaces::srv::Go
 
         //RCLCPP_INFO(this->get_logger(), "Read parameter final_approach = %s", final_approach_value ? "true" : "false");
         RCLCPP_INFO(this->get_logger(), "value of response->complete is %s", response->complete ? "true" : "false");
-        //rclcpp::shutdown();
+        rclcpp::shutdown();
         //response_complete = response->complete;
         callbackDone_ = true;
         
     
     }
 
-void ApproachClient::timer_callback()
+void AttachClient::timer_callback()
     {
 
     //may need to add a while loop
@@ -132,7 +131,7 @@ void ApproachClient::timer_callback()
         if(callbackDone_ == true)
         {
                 RCLCPP_INFO(this->get_logger(), "calling rclcpp::shutdown()");
-                rclcpp::shutdown();
+                //rclcpp::shutdown();
         }
         //break;
         
@@ -145,4 +144,4 @@ void ApproachClient::timer_callback()
 
 #include "rclcpp_components/register_node_macro.hpp"
 
-RCLCPP_COMPONENTS_REGISTER_NODE(my_components::ApproachClient)
+RCLCPP_COMPONENTS_REGISTER_NODE(my_components::AttachClient)

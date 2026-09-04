@@ -9,13 +9,21 @@ def generate_launch_description():
             name='my_container',
             namespace='',
             package='rclcpp_components',
-            executable='component_container',
+            executable='component_container_mt',
             composable_node_descriptions=[
                 ComposableNode(
                     package='my_components',
-                    plugin='my_components::MoveRobot',
-                    name='moverobot'),
+                    plugin='my_components::PreApproach',
+                    name='pre_approach',
+                    parameters=[{'use_sim_time': True}]
+                    ),
+                ComposableNode(
+                    package='my_components',
+                    plugin='my_components::AttachServer',
+                    name='attach_server',
+                    parameters=[{'use_sim_time': True}]),                
             ],
+            
             output='screen',
     )
 

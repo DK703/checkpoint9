@@ -25,7 +25,8 @@ namespace my_components
 {
 
 
-ApproachService::ApproachService(const std::string& node_name) : Node(node_name)
+AttachServer::AttachServer(const rclcpp::NodeOptions & options)
+: rclcpp::Node("approach_service", options)
     {
         
         
@@ -41,7 +42,7 @@ ApproachService::ApproachService(const std::string& node_name) : Node(node_name)
     std::string name_service = "/approach_shelf";
     //receives request from pre_approach_v2
     service_ = this->create_service<custom_interfaces::srv::GoToLoading>(
-    name_service,std::bind(&ApproachService::get_approach_callback, this, std::placeholders::_1, std::placeholders::_2),
+    name_service,std::bind(&AttachServer::get_approach_callback, this, std::placeholders::_1, std::placeholders::_2),
     rmw_qos_profile_services_default,
     service_cb_group_
     );
@@ -49,7 +50,7 @@ ApproachService::ApproachService(const std::string& node_name) : Node(node_name)
 
     //use this subscriber to help figure out odom point
     laser_subscriber_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-    "/scan", 10, std::bind(&ApproachService::scan_callback, this, std::placeholders::_1),
+    "/scan", 10, std::bind(&AttachServer::scan_callback, this, std::placeholders::_1),
     scan_options);
           
 
@@ -63,10 +64,10 @@ ApproachService::ApproachService(const std::string& node_name) : Node(node_name)
         
     cmd_vel_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel", 10);
     elevator_up_publisher_ = this->create_publisher<std_msgs::msg::String>("/elevator_up", 10);
-
+    RCLCPP_INFO(this->get_logger(), "service created");
     }
 
-void ApproachService::get_approach_callback(std::shared_ptr<custom_interfaces::srv::GoToLoading::Request> request, std::shared_ptr<custom_interfaces::srv::GoToLoading::Response> response)
+void AttachServer::get_approach_callback(std::shared_ptr<custom_interfaces::srv::GoToLoading::Request> request, std::shared_ptr<custom_interfaces::srv::GoToLoading::Response> response)
     {
 
     RCLCPP_INFO(this->get_logger(), "service has recieved a request and a response");
@@ -96,7 +97,7 @@ void ApproachService::get_approach_callback(std::shared_ptr<custom_interfaces::s
                     break;
                 }
 
-                RCLCPP_INFO(this->get_logger(), "still in while");
+                //RCLCPP_INFO(this->get_logger(), "still in while");
                 geometry_msgs::msg::Twist cmd;
                 cmd.linear.x = std::min(0.15, distance * 0.5);   // simple proportional control, capped
                 cmd.angular.z = std::atan2(error_y, error_x) * 1.0;  // steer toward the target
@@ -169,11 +170,11 @@ void ApproachService::get_approach_callback(std::shared_ptr<custom_interfaces::s
      }
      //response->complete = true;
        response->complete = response_;
-       rclcpp::shutdown();
+       //rclcpp::shutdown();
 
     }
 
-void ApproachService::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
+void AttachServer::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr scan_msg)
 {
 
         //set the frameConnection parameters that dont rely on the leg # at the start
@@ -267,7 +268,7 @@ void ApproachService::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr
      
 }
 
-std::vector<geometry_msgs::msg::Point> ApproachService::detect_legs(const sensor_msgs::msg::LaserScan::SharedPtr& scan)
+std::vector<geometry_msgs::msg::Point> AttachServer::detect_legs(const sensor_msgs::msg::LaserScan::SharedPtr& scan)
 {
     std::vector<geometry_msgs::msg::Point> legs;
     std::vector<int> current_cluster;
@@ -310,5 +311,5 @@ std::vector<geometry_msgs::msg::Point> ApproachService::detect_legs(const sensor
 
 
 #include "rclcpp_components/register_node_macro.hpp"
-//not needed for manual composition
-//RCLCPP_COMPONENTS_REGISTER_NODE(my_components::ApproachService)
+//apparently needed
+RCLCPP_COMPONENTS_REGISTER_NODE(my_components::AttachServer)
